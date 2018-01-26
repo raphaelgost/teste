@@ -68,4 +68,4 @@ ADD conf/postgres /opt/cpm/conf
 
 USER 26
 
-CMD ["/opt/cpm/bin/start.sh"]
+CMD ["/opt/cpm/bin/start.sh"]# teste
