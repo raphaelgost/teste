@@ -33,8 +33,7 @@ RUN yum -y update && yum -y install CGAL \
  cfitsio \                    
  fontconfig \                 
  fontpackages-filesystem \    
- freexl \                     
- gdal-libs \                  
+ freexl \                               
  geos \                       
  giflib \                     
  hdf5 \                       
