@@ -1,96 +1,96 @@
 FROM centos:7
 
-LABEL name="crunchydata/postgres-gis" \
-        vendor="crunchy data" \
-      	PostgresVersion="9.6" \
-      	PostgresFullVersion="9.6.6" \
-        version="7.3" \
-        release="1.7.0" \
-        build-date="2017-11-15" \
-        url="https://crunchydata.com" \
-        summary="Includes PostGIS extensions on top of crunchy-postgres" \
-        description="An identical image of crunchy-postgres with the extra PostGIS packages added for users that require PostGIS." \
-        io.k8s.description="postgres-gis container" \
-        io.k8s.display-name="Crunchy postgres-gis container" \
-        io.openshift.expose-services="" \
+LABEL name="crunchydata/postgres-gis"  \
+        vendor="crunchy data"  \
+      	PostgresVersion="9.6"  \
+      	PostgresFullVersion="9.6.6"  \
+        version="7.3"  \
+        release="1.7.0"  \
+        build-date="2017-11-15"  \
+        url="https://crunchydata.com"  \
+        summary="Includes PostGIS extensions on top of crunchy-postgres"  \
+        description="An identical image of crunchy-postgres with the extra PostGIS packages added for users that require PostGIS."  \
+        io.k8s.description="postgres-gis container"  \
+        io.k8s.display-name="Crunchy postgres-gis container"  \
+        io.openshift.expose-services=""  \
         io.openshift.tags="crunchy,database"
 
 ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
 
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
-RUN yum -y update && yum -y install CGAL\                     
- CharLS\                     
- SFCGAL\                     
- SFCGAL-libs\
- armadillo\                  
- arpack\                     
- atlas\                      
- blas\                       
- boost-date-time\            
- boost-serialization\        
- boost-system\               
- boost-thread\               
- cfitsio\                    
- fontconfig\                 
- fontpackages-filesystem\    
- freexl\                     
- gdal-libs\                  
- geos\                       
- giflib\                     
- hdf5\                       
- jasper-libs\                
- jbigkit-libs\               
- lapack\                     
- lcms2\                      
- libICE\                     
- libSM\                      
- libX11\                     
- libX11-common\              
- libXau\                     
- libXdamage\                 
- libXext\                    
- libXfixes\                  
- libXxf86vm\                 
- libdap\                     
- libgeotiff\                 
- libgfortran\                
- libgta\                     
- libjpeg-turbo\              
- libpng\                     
- libquadmath\                
- libtiff\                    
- libtool-ltdl\               
- libwebp\                    
- libxcb\                     
- libxshmfence\               
- mesa-libGL\                 
- mesa-libGLU\                
- mesa-libglapi\              
- mpfr\                       
- netcdf\                     
- ogdi\                       
- openjpeg-libs\              
- poppler\                    
- poppler-data\               
- proj\                       
- unixODBC\                   
+RUN yum -y update && yum -y install CGAL \                     
+ CharLS \                     
+ SFCGAL \                     
+ SFCGAL-libs \
+ armadillo \                  
+ arpack \                     
+ atlas \                      
+ blas \                       
+ boost-date-time \            
+ boost-serialization \        
+ boost-system \               
+ boost-thread \               
+ cfitsio \                    
+ fontconfig \                 
+ fontpackages-filesystem \    
+ freexl \                     
+ gdal-libs \                  
+ geos \                       
+ giflib \                     
+ hdf5 \                       
+ jasper-libs \                
+ jbigkit-libs \               
+ lapack \                     
+ lcms2 \                      
+ libICE \                     
+ libSM \                      
+ libX11 \                     
+ libX11-common \              
+ libXau \                     
+ libXdamage \                 
+ libXext \                    
+ libXfixes \                  
+ libXxf86vm \                 
+ libdap \                     
+ libgeotiff \                 
+ libgfortran \                
+ libgta \                     
+ libjpeg-turbo \              
+ libpng \                     
+ libquadmath \                
+ libtiff \                    
+ libtool-ltdl \               
+ libwebp \                    
+ libxcb \                     
+ libxshmfence \               
+ mesa-libGL \                 
+ mesa-libGLU \                
+ mesa-libglapi \              
+ mpfr \                       
+ netcdf \                     
+ ogdi \                       
+ openjpeg-libs \              
+ poppler \                    
+ poppler-data \               
+ proj \                       
+ unixODBC \                   
  xerces-c 
  
-RUN yum -y update && yum -y install epel-release \
- && yum -y update glibc-common \
- && yum -y install bind-utils \
-    gettext \
-    hostname \
-    nss_wrapper \
-    openssh-server \
-    openssh-clients \
-    procps-ng  \
-    rsync \
- && yum -y install postgresql96-server postgresql96-contrib postgresql96 \
-    R-core libRmath plr96 \
-    pgaudit_96 \
-    pgbackrest \
-    postgis23_96 postgis23_96-client \
+RUN yum -y update && yum -y install epel-release  \
+ && yum -y update glibc-common  \
+ && yum -y install bind-utils  \
+    gettext  \
+    hostname  \
+    nss_wrapper  \
+    openssh-server  \
+    openssh-clients  \
+    procps-ng   \
+    rsync  \
+ && yum -y install postgresql96-server postgresql96-contrib postgresql96  \
+    R-core libRmath plr96  \
+    pgaudit_96  \
+    pgbackrest  \
+    postgis23_96 postgis23_96-client  \
  && yum -y clean all
 
 ENV PGROOT="/usr/pgsql-${PGVERSION}"
@@ -100,7 +100,7 @@ ADD conf/.bash_profile /var/lib/pgsql/
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgdata /pgwal /pgconf /backup /recover /backrestrepo /sshd
 
-RUN chown -R postgres:postgres /opt/cpm /var/lib/pgsql \
+RUN chown -R postgres:postgres /opt/cpm /var/lib/pgsql  \
     /pgdata /pgwal /pgconf /backup /recover /backrestrepo
 
 # Link pgbackrest.conf to default location for convenience
@@ -126,3 +126,4 @@ ADD conf/postgres /opt/cpm/conf
 USER 26
 
 CMD ["/opt/cpm/bin/start.sh"]
+
