@@ -1,82 +1,71 @@
-FROM centos/s2i-core-centos7
+FROM centos:7
 
-# PostgreSQL image for OpenShift.
-# Volumes:
-#  * /var/lib/psql/data   - Database cluster for PostgreSQL
-# Environment:
-#  * $POSTGRESQL_USER     - Database user name
-#  * $POSTGRESQL_PASSWORD - User's password
-#  * $POSTGRESQL_DATABASE - Name of the database to create
-#  * $POSTGRESQL_ADMIN_PASSWORD (Optional) - Password for the 'postgres'
-#                           PostgreSQL administrative account
+LABEL name="crunchydata/postgres-gis" \
+        vendor="crunchy data" \
+      	PostgresVersion="9.6" \
+      	PostgresFullVersion="9.6.6" \
+        version="7.3" \
+        release="1.7.0" \
+        build-date="2017-11-15" \
+        url="https://crunchydata.com" \
+        summary="Includes PostGIS extensions on top of crunchy-postgres" \
+        description="An identical image of crunchy-postgres with the extra PostGIS packages added for users that require PostGIS." \
+        io.k8s.description="postgres-gis container" \
+        io.k8s.display-name="Crunchy postgres-gis container" \
+        io.openshift.expose-services="" \
+        io.openshift.tags="crunchy,database"
 
-ENV POSTGRESQL_VERSION=9.5 \
-    POSTGRESQL_PREV_VERSION=9.4 \
-    HOME=/var/lib/pgsql \
-    PGUSER=postgres \
-    APP_DATA=/opt/app-root
+ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
 
-ENV SUMMARY="PostgreSQL is an advanced Object-Relational database management system" \
-    DESCRIPTION="PostgreSQL is an advanced Object-Relational database management system (DBMS). \
-The image contains the client and server programs that you'll need to \
-create, run, maintain and access a PostgreSQL DBMS server."
+RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
-LABEL summary=$SUMMARY \
-      description="$DESCRIPTION" \
-      io.k8s.description="$DESCRIPTION" \
-      io.k8s.display-name="PostgreSQL 9.5" \
-      io.openshift.expose-services="5432:postgresql" \
-      io.openshift.tags="database,postgresql,postgresql95,rh-postgresql95" \
-      name="centos/postgresql-95-centos7" \
-      com.redhat.component="rh-postgresql95-docker" \
-      version="9.5" \
-      usage="docker run -d --name postgresql_database -e POSTGRESQL_USER=user -e POSTGRESQL_PASSWORD=pass -e POSTGRESQL_DATABASE=db -p 5432:5432 centos/postgresql-95-centos7" \
-      maintainer="SoftwareCollections.org <sclorg@redhat.com>"
+RUN yum -y update && yum -y install epel-release \
+ && yum -y update glibc-common \
+ && yum -y install bind-utils \
+    gettext \
+    hostname \
+    nss_wrapper \
+    openssh-server \
+    openssh-clients \
+    procps-ng  \
+    rsync \
+ && yum -y install postgresql96-server postgresql96-contrib postgresql96 \
+    R-core libRmath plr96 \
+    pgaudit_96 \
+    pgbackrest \
+    postgis23_96 postgis23_96-client \
+ && yum -y clean all
 
+ENV PGROOT="/usr/pgsql-${PGVERSION}"
+
+# add path settings for postgres user
+ADD conf/.bash_profile /var/lib/pgsql/
+
+RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgdata /pgwal /pgconf /backup /recover /backrestrepo /sshd
+
+RUN chown -R postgres:postgres /opt/cpm /var/lib/pgsql \
+    /pgdata /pgwal /pgconf /backup /recover /backrestrepo
+
+# Link pgbackrest.conf to default location for convenience
+RUN ln -sf /pgconf/pgbackrest.conf /etc/pgbackrest.conf
+
+# add volumes to allow override of pg_hba.conf and postgresql.conf
+# add volumes to allow backup of postgres files
+# add volumes to offer a restore feature
+# add volumes to allow storage of postgres WAL segment files
+# add volumes to locate WAL files to recover with
+# add volumes for pgbackrest to write to
+# add volumes for sshd host keys
+
+VOLUME ["/pgconf", "/pgdata", "/pgwal", "/backup", "/recover", "/backrestrepo", "/sshd"]
+
+# open up the postgres port
 EXPOSE 5432
 
-COPY root/usr/libexec/fix-permissions /usr/libexec/fix-permissions
-
-# This image must forever use UID 26 for postgres user so our volumes are
-# safe in the future. This should *never* change, the last test is there
-# to make sure of that.
-RUN yum install -y centos-release-scl-rh && \
-    INSTALL_PKGS="rsync tar gettext bind-utils nss_wrapper rh-postgresql95 rh-postgresql95-postgresql-contrib rh-postgresql94-postgresql-server" && \
-    yum -y --setopt=tsflags=nodocs install $INSTALL_PKGS && \
-    rpm -V $INSTALL_PKGS && \
-    yum clean all && \
-    localedef -f UTF-8 -i en_US en_US.UTF-8 && \
-    test "$(id postgres)" = "uid=26(postgres) gid=26(postgres) groups=26(postgres)" && \
-    mkdir -p /var/lib/pgsql/data && \
-    /usr/libexec/fix-permissions /var/lib/pgsql && \
-    /usr/libexec/fix-permissions /var/run/postgresql
-
-# Get prefix path and path to scripts rather than hard-code them in scripts
-ENV CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/postgresql \
-    ENABLED_COLLECTIONS=rh-postgresql95
-
-COPY root /
-COPY ./s2i/bin/ $STI_SCRIPTS_PATH
-
-# When bash is started non-interactively, to run a shell script, for example it
-# looks for this variable and source the content of this file. This will enable
-# the SCL for all scripts without need to do 'scl enable'.
-ENV BASH_ENV=${CONTAINER_SCRIPTS_PATH}/scl_enable \
-    ENV=${CONTAINER_SCRIPTS_PATH}/scl_enable \
-    PROMPT_COMMAND=". ${CONTAINER_SCRIPTS_PATH}/scl_enable"
-
-VOLUME ["/var/lib/pgsql/data"]
-
-# {APP_DATA} needs to be accessed by postgres user while s2i assembling
-# postgres user changes permissions of files in APP_DATA during assembling
-RUN /usr/libexec/fix-permissions ${APP_DATA} && \
-    usermod -a -G root postgres
-	
-RUN yum -y install epel-release
-
-RUN yum install postgis2_95
+ADD bin/postgres /opt/cpm/bin
+ADD bin/postgres-gis /opt/cpm/bin
+ADD conf/postgres /opt/cpm/conf
 
 USER 26
 
-ENTRYPOINT ["container-entrypoint"]
-CMD ["run-postgresql"]
+CMD ["/opt/cpm/bin/start.sh"]
