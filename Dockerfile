@@ -1,6 +1,4 @@
-FROM registry.access.redhat.com/rhel
-
-MAINTAINER Crunchy Data <support@crunchydata.com>
+FROM centos:7
 
 LABEL name="crunchydata/postgres-gis" \
         vendor="crunchy data" \
@@ -8,47 +6,91 @@ LABEL name="crunchydata/postgres-gis" \
       	PostgresFullVersion="9.6.6" \
         version="7.3" \
         release="1.7.0" \
-        #build-date="2017-05-11" \
+        build-date="2017-11-15" \
         url="https://crunchydata.com" \
         summary="Includes PostGIS extensions on top of crunchy-postgres" \
-        description="An identical image of crunchy-postgres with the extra PostGIS and pgrouting packages added for users that require PostGIS." \
-        run="" \
-        start="" \
-        stop="" \
+        description="An identical image of crunchy-postgres with the extra PostGIS packages added for users that require PostGIS." \
         io.k8s.description="postgres-gis container" \
         io.k8s.display-name="Crunchy postgres-gis container" \
         io.openshift.expose-services="" \
         io.openshift.tags="crunchy,database"
 
-COPY docs/postgres-gis/help.1 /help.1
-COPY docs/postgres-gis/help.md /help.md
-COPY docs/licenses /licenses
+ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
 
-ENV PGVERSION="9.6"
-
-# if you ever need to install package docs inside the container, uncomment
-#RUN sed -i '/nodocs/d' /etc/yum.conf
-
-# Crunchy Postgres repo
-ADD conf/CRUNCHY-GPG-KEY.public  /
-ADD conf/crunchypg96.repo /etc/yum.repos.d/
-RUN rpm --import CRUNCHY-GPG-KEY.public
-
-RUN rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
- && yum -y update && yum --enablerepo=epel --enablerepo="rhel-7-server-optional-rpms" -y install bind-utils \
-	gettext \
-	hostname \
-	R-core libRmath texinfo-tex texlive-epsf \
-	nss_wrapper \
-	openssh-clients \
-	procps-ng \
- 	rsync \
-        postgresql96 postgresql96-contrib postgresql96-server \
-	pgaudit96 pgaudit96_set_user \
-	crunchy-backrest plr96 \
-	postgis2_96 postgis2_96-client pgrouting_96 \
- && yum -y reinstall glibc-common \
- && yum -y --setopt=tsflags='' install pgaudit_analyze \
+RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
+RUN yum -y update && yum -y install CGAL\                     
+ CharLS\                     
+ SFCGAL\                     
+ SFCGAL-libs\
+ armadillo\                  
+ arpack\                     
+ atlas\                      
+ blas\                       
+ boost-date-time\            
+ boost-serialization\        
+ boost-system\               
+ boost-thread\               
+ cfitsio\                    
+ fontconfig\                 
+ fontpackages-filesystem\    
+ freexl\                     
+ gdal-libs\                  
+ geos\                       
+ giflib\                     
+ hdf5\                       
+ jasper-libs\                
+ jbigkit-libs\               
+ lapack\                     
+ lcms2\                      
+ libICE\                     
+ libSM\                      
+ libX11\                     
+ libX11-common\              
+ libXau\                     
+ libXdamage\                 
+ libXext\                    
+ libXfixes\                  
+ libXxf86vm\                 
+ libdap\                     
+ libgeotiff\                 
+ libgfortran\                
+ libgta\                     
+ libjpeg-turbo\              
+ libpng\                     
+ libquadmath\                
+ libtiff\                    
+ libtool-ltdl\               
+ libwebp\                    
+ libxcb\                     
+ libxshmfence\               
+ mesa-libGL\                 
+ mesa-libGLU\                
+ mesa-libglapi\              
+ mpfr\                       
+ netcdf\                     
+ ogdi\                       
+ openjpeg-libs\              
+ poppler\                    
+ poppler-data\               
+ proj\                       
+ unixODBC\                   
+ xerces-c 
+ 
+RUN yum -y update && yum -y install epel-release \
+ && yum -y update glibc-common \
+ && yum -y install bind-utils \
+    gettext \
+    hostname \
+    nss_wrapper \
+    openssh-server \
+    openssh-clients \
+    procps-ng  \
+    rsync \
+ && yum -y install postgresql96-server postgresql96-contrib postgresql96 \
+    R-core libRmath plr96 \
+    pgaudit_96 \
+    pgbackrest \
+    postgis23_96 postgis23_96-client \
  && yum -y clean all
 
 ENV PGROOT="/usr/pgsql-${PGVERSION}"
@@ -56,21 +98,23 @@ ENV PGROOT="/usr/pgsql-${PGVERSION}"
 # add path settings for postgres user
 ADD conf/.bash_profile /var/lib/pgsql/
 
-# set up cpm directory
-RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgdata /pgwal /pgconf /backup /recover /backrestrepo
+RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgdata /pgwal /pgconf /backup /recover /backrestrepo /sshd
 
 RUN chown -R postgres:postgres /opt/cpm /var/lib/pgsql \
-	/pgdata /pgwal /pgconf /backup /recover /backrestrepo
+    /pgdata /pgwal /pgconf /backup /recover /backrestrepo
+
+# Link pgbackrest.conf to default location for convenience
+RUN ln -sf /pgconf/pgbackrest.conf /etc/pgbackrest.conf
 
 # add volumes to allow override of pg_hba.conf and postgresql.conf
 # add volumes to allow backup of postgres files
 # add volumes to offer a restore feature
 # add volumes to allow storage of postgres WAL segment files
 # add volumes to locate WAL files to recover with
-# volume for pgbackrest to write to
+# add volumes for pgbackrest to write to
+# add volumes for sshd host keys
 
-VOLUME /pgconf /pgdata /pgwal \
-  /backup /recover /backrestrepo
+VOLUME ["/pgconf", "/pgdata", "/pgwal", "/backup", "/recover", "/backrestrepo", "/sshd"]
 
 # open up the postgres port
 EXPOSE 5432
