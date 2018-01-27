@@ -18,9 +18,9 @@ LABEL name="crunchydata/postgres-gis" \
 ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
 
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
+RUN rpm -ivh http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 
-RUN yum -y update && yum -y install epel-release \
- && yum -y update glibc-common \
+RUN yum -y update glibc-common \
  && yum -y install bind-utils \
 	gettext \
 	hostname \
